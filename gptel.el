@@ -135,7 +135,8 @@ is only inserted in dedicated gptel buffers."
 
 ;; Model and interaction parameters
 (defvar-local gptel--system-message
-  "You are a large language model living in Emacs and a helpful assistant. Respond concisely.")
+    "You are a large language model living in Emacs and a helpful assistant. Respond concisely.")
+(setf (get 'gptel--system-message 'permanent-local) t)
 
 (defcustom gptel-directives
   `((default . ,gptel--system-message)
@@ -173,7 +174,7 @@ will get progressively longer!"
   :local t
   :group 'gptel
   :type '(choice (integer :tag "Specify Token count")
-                 (const :tag "Default" nil)))
+          (const :tag "Default" nil)))
 
 (defcustom gptel-model "gpt-3.5-turbo"
   "GPT Model for chat.
@@ -235,6 +236,50 @@ By default, \"openai.com\" is used as HOST and \"apikey\" as USER."
   (or (alist-get major-mode gptel-prompt-prefix-alist) ""))
 
 (defvar-local gptel--old-header-line nil)
+
+(defcustom gptel-api-key #'gptel-api-key-from-auth-source
+  "An OpenAI API key (string).
+
+Can also be a function of no arguments that returns an API
+key (more secure)."
+  :group 'gptel
+  :type '(choice
+          (string :tag "API key")
+          (function :tag "Function that returns the API key")))
+(defcustom gptel-header-line
+  (list (concat (propertize " " 'display '(space :align-to 0))
+                (format "%s" (buffer-name)))
+        (propertize " Ready" 'face 'success)
+        '(:eval
+          (let* ((l1 (length gptel-model))
+                 (num-exchanges
+                  (if gptel--num-messages-to-send
+                      (format "[Send: %s exchanges]" gptel--num-messages-to-send)
+                    "[Send: buffer]"))
+                 (l2 (length num-exchanges)))
+           (concat
+            (propertize
+             " " 'display `(space :align-to ,(max 1 (- (window-width) (+ 2 l1 l2)))))
+            (propertize
+             (button-buttonize num-exchanges
+              (lambda (&rest _) (gptel-menu)))
+             'mouse-face 'highlight
+             'help-echo
+             "Number of past exchanges to include with each request")
+            " "
+            (propertize
+             (button-buttonize (concat "[" gptel-model "]")
+              (lambda (&rest _) (gptel-menu)))
+             'mouse-face 'highlight
+             'help-echo "OpenAI GPT model in use")))))
+  "Docstring."
+  :group 'gptel
+  :type 'sexp
+  :risky t)
+
+(defvar-local gptel-major-mode-from-file nil)
+(setf (get 'gptel-major-mode-from-file 'permanent-local) t)
+
 (define-minor-mode gptel-mode
   "Minor mode for interacting with ChatGPT."
   :lighter " GPT"
@@ -267,17 +312,27 @@ By default, \"openai.com\" is used as HOST and \"apikey\" as USER."
                       " "
                       (propertize
                        (button-buttonize (concat "[" gptel-model "]")
-                            (lambda (&rest _) (gptel-menu)))
-                           'mouse-face 'highlight
-                           'help-echo "OpenAI GPT model in use"))))))
+                        (lambda (&rest _) (gptel-menu)))
+                       'mouse-face 'highlight
+                       'help-echo "OpenAI GPT model in use"))))))
     (setq header-line-format gptel--old-header-line)))
+
+;; prevent gptel-mode from kill-all-local-variables
+(setf (get 'gptel-mode 'permanent-local) t)
+
+(defun gptel-enable-after-major-mode-change ()
+  "Enable `gptel-mode` after you change major mode/ load a new file.
+called in `after-change-major-mode-hook`"
+  (when gptel-mode
+    (gptel-mode)))
+(add-hook 'after-change-major-mode-hook #'gptel-enable-after-major-mode-change)
 
 (defun gptel--update-header-line (msg face)
   "Update header line with status MSG in FACE."
   (and gptel-mode (consp header-line-format)
-    (setf (nth 1 header-line-format)
-          (propertize msg 'face face))
-    (force-mode-line-update)))
+       (setf (nth 1 header-line-format)
+             (propertize msg 'face face))
+       (force-mode-line-update)))
 
 (cl-defun gptel-request
     (&optional prompt &key callback
@@ -367,12 +422,12 @@ Model parameters can be let-bound around calls to this function."
            ((integerp position)
             (set-marker (make-marker) position buffer))))
          (full-prompt
-         (cond
-          ((null prompt) (gptel--create-prompt start-marker))
-          ((stringp prompt)
-           `((:role "system" :content ,system)
-             (:role "user"   :content ,prompt)))
-          ((consp prompt) prompt)))
+          (cond
+           ((null prompt) (gptel--create-prompt start-marker))
+           ((stringp prompt)
+            `((:role "system" :content ,system)
+              (:role "user"   :content ,prompt)))
+           ((consp prompt) prompt)))
          (info (list :prompt full-prompt
                      :buffer buffer
                      :position start-marker)))
@@ -396,19 +451,19 @@ instead."
   (interactive "P")
   (if (and arg (require 'gptel-transient nil t))
       (call-interactively #'gptel-menu)
-  (message "Querying ChatGPT...")
-  (let* ((response-pt
-          (if (use-region-p)
-              (set-marker (make-marker) (region-end))
-            (point-marker)))
-         (gptel-buffer (current-buffer))
-         (full-prompt (gptel--create-prompt response-pt)))
-    (funcall
-     (if gptel-use-curl
-         #'gptel-curl-get-response #'gptel--url-get-response)
-     (list :prompt full-prompt
-           :buffer gptel-buffer
-           :position response-pt)))
+    (message "Querying ChatGPT...")
+    (let* ((response-pt
+            (if (use-region-p)
+                (set-marker (make-marker) (region-end))
+              (point-marker)))
+           (gptel-buffer (current-buffer))
+           (full-prompt (gptel--create-prompt response-pt)))
+      (funcall
+       (if gptel-use-curl
+           #'gptel-curl-get-response #'gptel--url-get-response)
+       (list :prompt full-prompt
+             :buffer gptel-buffer
+             :position response-pt)))
     (gptel--update-header-line " Waiting..." 'warning)))
 
 (defun gptel--insert-response (response info)
@@ -423,7 +478,7 @@ See `gptel--url-get-response' for details."
       (if response
           (progn
             (setq response (gptel--transform-response
-                               response gptel-buffer))
+                            response gptel-buffer))
             (save-excursion
               (put-text-property 0 (length response) 'gptel 'response response)
               (message "Querying ChatGPT... done.")
@@ -442,7 +497,7 @@ See `gptel--url-get-response' for details."
                  status-str (plist-get info :error)))
       (run-hooks 'gptel-post-response-hook))))
 
-(defun gptel--create-prompt (&optional prompt-end)
+(defun gptel--create-prompt (&optional prompt-end inhibit-trim)
   "Return a full conversation prompt from the contents of this buffer.
 
 If `gptel--num-messages-to-send' is set, limit to that many
@@ -452,7 +507,10 @@ If the region is active limit the prompt to the region contents
 instead.
 
 If PROMPT-END (a marker) is provided, end the prompt contents
-there."
+there.
+
+If INHIBIT-TRIM is non nil, do not remove additional characters.
+This is used in saving to a file"
   (save-excursion
     (save-restriction
       (if (use-region-p)
@@ -472,10 +530,12 @@ there."
                               t))))
           (push (list :role (if (prop-match-value prop) "assistant" "user")
                       :content
-                      (string-trim
-                       (buffer-substring-no-properties (prop-match-beginning prop)
-                                                       (prop-match-end prop))
-                       "[*# \t\n\r]+"))
+                      (let ((str (buffer-substring-no-properties
+                                  (prop-match-beginning prop)
+                                  (prop-match-end prop))))
+                        (if inhibit-trim str
+                          (string-trim str
+                                       "[*# \t\n\r]+"))))
                 prompts)
           (and max-entries (cl-decf max-entries)))
         (cons (list :role "system"
@@ -536,12 +596,12 @@ the response is inserted into the current buffer after point."
          (message-log-max nil)
          (url-request-method "POST")
          (url-request-extra-headers
-         `(("Content-Type" . "application/json")
-           ("Authorization" . ,(concat "Bearer " (gptel--api-key)))))
-        (url-request-data
-         (encode-coding-string
-          (json-encode (gptel--request-data (plist-get info :prompt)))
-          'utf-8)))
+          `(("Content-Type" . "application/json")
+            ("Authorization" . ,(concat "Bearer " (gptel--api-key)))))
+         (url-request-data
+          (encode-coding-string
+           (json-encode (gptel--request-data (plist-get info :prompt)))
+           'utf-8)))
     (url-retrieve "https://api.openai.com/v1/chat/completions"
                   (lambda (_)
                     (pcase-let ((`(,response ,http-msg ,error)
@@ -573,7 +633,7 @@ the response is inserted into the current buffer after point."
           (cond
            ((string-match-p "200 OK" http-msg)
             (list (string-trim (map-nested-elt response '(:choices 0 :message :content)))
-                   http-msg))
+                  http-msg))
            ((plist-get response :error)
             (let* ((error-plist (plist-get response :error))
                    (error-msg (plist-get error-plist :message))
@@ -729,7 +789,112 @@ text stream."
           (if noop-p
               (buffer-substring (point) start-pt)
             (prog1 (buffer-substring (point) (point-max))
-                   (set-marker start-pt (point-max)))))))))
+              (set-marker start-pt (point-max)))))))))
+
+(defun gptel-run-real-handler (operation &rest args)
+  "Call the next handler in `file-name-handler-alist` for OPERATION with ARGS."
+  (let ((inhibit-file-name-handlers
+         (cons #'gptel-file-handler
+               (and (eq inhibit-file-name-operation operation)
+                    inhibit-file-name-handlers)))
+        (inhibit-file-name-operation operation))
+    (apply operation args)))
+
+(defun gptel-parse-file-object-v1 (obj)
+  "Parse OBJ and insert into current buffer.
+Called from gptel-insert-file-contents.
+OBJ is returned by `read`."
+  (setq gptel-major-mode-from-file
+        (plist-get obj :major-mode))
+  (mapc
+   (lambda (x)
+     (let ((content (plist-get x :content)))
+       (pcase (plist-get x :role)
+         ("system" (setq-local gptel--system-message content))
+         ("user" (insert content))
+         ("assistant" (insert (propertize content 'gptel 'response))))))
+   (plist-get obj :conversation)))
+
+(defun gptel-insert-file-contents (filename &optional visit beg end replace)
+  "Decode FILENAME to a gptel buffer.
+See `insert-file-contents` for details on VISIT BEG END REPLACE."
+  (let (obj ans)
+    ;; FIXME: honor replace == nil
+    (atomic-change-group
+      (delete-region (point-min) (point-max))
+      (setq ans (gptel-run-real-handler 'insert-file-contents filename visit beg end replace)))
+    (atomic-change-group
+      (goto-char (point-min))
+      (setq obj (read (current-buffer)))
+      (delete-region (point-min) (point-max))
+      (let ((version (plist-get obj :version)))
+        (cond
+         ((version<= version "1.0")
+          (gptel-parse-file-object-v1 obj))
+         (t (error "Unknown version: %s" version)))))
+    (setq-local gptel-mode t)
+    ans))
+
+(defun gptel-write-region (_start _end filename &optional append visit lockname mustbenew)
+  "Encode current buffer and then write to FILENAME.
+See `write-region` for details on APPEND VISIT LOCKNAME MUSTBENEW.
+
+This function depends on `atomic-change-group` which is not ideal"
+  (when append (error "append not supported"))
+  (let (ans gptel--num-messages-to-send obj)
+    (save-excursion
+      (save-restriction
+        ;; FIXME: respect start + end
+        (widen)
+        (goto-char (point-max))
+        (catch 'revert!
+          (atomic-change-group
+            (setq obj
+                  `(:version "1.0"
+                    :major-mode ,major-mode
+                    :conversation
+                    ,(gptel--create-prompt nil 'inhibit-trim)))
+            (delete-region (point-min) (point-max))
+            ;; FIXME: pp settings ought to be set
+            (pp obj (current-buffer))
+            (setq ans
+                  (gptel-run-real-handler
+                   'write-region
+                   (point-min) (point-max) filename
+                   nil visit lockname mustbenew))
+            (throw 'revert! nil)))
+        ans))))
+
+;;;###autoload
+(defun gptel-file-handler (operation &rest args)
+  "Entry for `file-name-handler-alist`.
+OPERATION is the primitive and ARGS arguments."
+  (cond ((eq operation 'insert-file-contents)
+         (apply #'gptel-insert-file-contents args))
+        ((eq operation 'write-region)
+         (apply #'gptel-write-region args))
+        (t (apply #'gptel-run-real-handler operation args))))
+
+;;;###autoload
+(defun gptel-load-major-mode ()
+  "Load major mode parsed from `gptel-insert-file-contents'."
+  (when gptel-major-mode-from-file
+    (unwind-protect
+        (funcall gptel-major-mode-from-file)
+      (setq gptel-major-mode-from-file nil))))
+
+;;;###autoload
+(add-to-list
+ 'file-name-handler-alist
+ (cons (rx ".gpt" eos)
+       #'gptel-file-handler))
+
+;;;###autoload
+(add-to-list
+ 'auto-mode-alist
+ ;; decide major-mode by what is before the .gpt suffix
+ (cons (rx ".gpt" eos)
+       #'gptel-load-major-mode))
 
 (provide 'gptel)
 ;;; gptel.el ends here
