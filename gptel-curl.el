@@ -120,7 +120,7 @@ PROCESS and STATUS are process parameters."
             (when gptel-mode
               (gptel--update-header-line  " Ready" 'success)
               (save-excursion (goto-char tracking-marker)
-                              (insert "\n\n" (gptel-prompt-string)))))
+                              (insert-before-markers "\n\n" (gptel-prompt-string)))))
         ;; Or Capture error message
         (with-current-buffer proc-buf
           (goto-char (point-max))
@@ -168,7 +168,6 @@ See `gptel--url-get-response' for details."
               (unless (plist-get info :in-place)
                 (insert "\n\n"))
               (setq tracking-marker (set-marker (make-marker) (point)))
-              (set-marker-insertion-type tracking-marker t)
               (plist-put info :tracking-marker tracking-marker))
             
             (when transformer
@@ -176,7 +175,7 @@ See `gptel--url-get-response' for details."
             
             (put-text-property 0 (length response) 'gptel 'response response)
             (goto-char tracking-marker)
-            (insert response))))))
+            (insert-before-markers response))))))
 
 (defun gptel-curl--stream-filter (process output)
   (let* ((content-strs)
