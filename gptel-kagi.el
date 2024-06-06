@@ -30,8 +30,8 @@
 
 ;;; Kagi
 (cl-defstruct (gptel-kagi (:constructor gptel--make-kagi)
-                            (:copier nil)
-                            (:include gptel-backend)))
+                          (:copier nil)
+                          (:include gptel-backend)))
 
 (cl-defmethod gptel--parse-response ((_backend gptel-kagi) response info)
   (let* ((data (plist-get response :data))
@@ -65,7 +65,7 @@
                      into ref-strings
                      finally return
                      (concat "\n\n" (mapconcat #'identity ref-strings "\n")))))
-        (concat output references)))
+    (concat output references)))
 
 (cl-defmethod gptel--request-data ((_backend gptel-kagi) prompts)
   "JSON encode PROMPTS for Kagi."
@@ -180,7 +180,7 @@ Example:
     (prog1 backend
       (setf (alist-get name gptel--known-backends
                        nil nil #'equal)
-                  backend))))
+            backend))))
 
 (provide 'gptel-kagi)
 ;;; gptel-kagi.el ends here

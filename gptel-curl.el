@@ -54,8 +54,8 @@
 
 REQUEST-DATA is the data to send, TOKEN is a unique identifier."
   (let* ((url (let ((backend-url (gptel-backend-url gptel-backend)))
-                    (if (functionp backend-url)
-                        (funcall backend-url) backend-url)))
+                (if (functionp backend-url)
+                    (funcall backend-url) backend-url)))
          (data-json (encode-coding-string (gptel--json-encode data) 'utf-8))
          (headers
           (append '(("Content-Type" . "application/json"))
@@ -175,10 +175,10 @@ PROC-INFO is the plist containing process metadata."
   (unless gptel-use-curl
     (user-error "Cannot stop a `url-retrieve' request!"))
   (if-let* ((proc-attrs
-            (cl-find-if
-             (lambda (proc-list)
-               (eq (plist-get (cdr proc-list) :buffer) buf))
-             gptel-curl--process-alist))
+             (cl-find-if
+              (lambda (proc-list)
+                (eq (plist-get (cdr proc-list) :buffer) buf))
+              gptel-curl--process-alist))
             (proc (car proc-attrs)))
       (progn
         (setf (alist-get proc gptel-curl--process-alist nil 'remove) nil)
@@ -230,9 +230,9 @@ PROCESS and _STATUS are process parameters."
               (if (stringp error-data)
                   (message "%s error: (%s) %s" backend-name http-msg error-data)
                 (when-let ((error-msg (plist-get error-data :message)))
-                    (message "%s error: (%s) %s" backend-name http-msg error-msg))
+                  (message "%s error: (%s) %s" backend-name http-msg error-msg))
                 (when-let ((error-type (plist-get error-data :type)))
-                    (setq http-msg (concat "("  http-msg ") " (string-trim error-type))))))
+                  (setq http-msg (concat "("  http-msg ") " (string-trim error-type))))))
              ((eq response 'json-read-error)
               (message "%s error (%s): Malformed JSON in response." backend-name http-msg))
              (t (message "%s error (%s): Could not parse HTTP response." backend-name http-msg)))))
@@ -262,30 +262,30 @@ See `gptel--url-get-response' for details."
         (tracking-marker (plist-get info :tracking-marker))
         (transformer (plist-get info :transformer)))
     (when response
-        (with-current-buffer (marker-buffer start-marker)
-          (save-excursion
-            (unless tracking-marker
-              (gptel--update-status " Typing..." 'success)
-              (goto-char start-marker)
-              (unless (or (bobp) (plist-get info :in-place))
-                (insert "\n\n")
-                (when gptel-mode
-                  ;; Put prefix before AI response.
-                  (insert (gptel-response-prefix-string)))
-                (move-marker start-marker (point)))
-              (setq tracking-marker (set-marker (make-marker) (point)))
-              (set-marker-insertion-type tracking-marker t)
-              (plist-put info :tracking-marker tracking-marker))
-            
-            (when transformer
-              (setq response (funcall transformer response)))
-            
-            (put-text-property
-             0 (length response) 'gptel 'response response)
-            (goto-char tracking-marker)
-            ;; (run-hooks 'gptel-pre-stream-hook)
-            (insert response)
-            (run-hooks 'gptel-post-stream-hook))))))
+      (with-current-buffer (marker-buffer start-marker)
+        (save-excursion
+          (unless tracking-marker
+            (gptel--update-status " Typing..." 'success)
+            (goto-char start-marker)
+            (unless (or (bobp) (plist-get info :in-place))
+              (insert "\n\n")
+              (when gptel-mode
+                ;; Put prefix before AI response.
+                (insert (gptel-response-prefix-string)))
+              (move-marker start-marker (point)))
+            (setq tracking-marker (set-marker (make-marker) (point)))
+            (set-marker-insertion-type tracking-marker t)
+            (plist-put info :tracking-marker tracking-marker))
+
+          (when transformer
+            (setq response (funcall transformer response)))
+
+          (put-text-property
+           0 (length response) 'gptel 'response response)
+          (goto-char tracking-marker)
+          ;; (run-hooks 'gptel-pre-stream-hook)
+          (insert response)
+          (run-hooks 'gptel-post-stream-hook))))))
 
 (defun gptel-curl--stream-filter (process output)
   (let* ((proc-info (alist-get process gptel-curl--process-alist)))
@@ -295,7 +295,7 @@ See `gptel--url-get-response' for details."
         (goto-char (process-mark process))
         (insert output)
         (set-marker (process-mark process) (point)))
-      
+
       ;; Find HTTP status
       (unless (plist-get proc-info :http-status)
         (save-excursion
@@ -328,7 +328,7 @@ See `gptel--url-get-response' for details."
                    gptel-pre-response-hook)
           (with-current-buffer (marker-buffer (plist-get proc-info :position))
             (run-hooks 'gptel-pre-response-hook))))
-      
+
       (when-let ((http-msg (plist-get proc-info :status))
                  (http-status (plist-get proc-info :http-status)))
         ;; Find data chunk(s) and run callback

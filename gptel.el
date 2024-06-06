@@ -93,7 +93,7 @@
 ;;   prompt/response.
 ;;
 ;; To use this in a dedicated buffer:
-;; 
+;;
 ;; - M-x gptel: Start a chat session
 ;; - C-u M-x gptel: Start another session or multiple independent chat sessions
 ;;
@@ -112,11 +112,11 @@
 ;; gptel offers a few extra conveniences in Org mode.
 ;; - You can limit the conversation context to an Org heading with
 ;;   `gptel-org-set-topic'.
-;;   
+;;
 ;; - You can have branching conversations in Org mode, where each hierarchical
 ;;   outline path through the document is a separate conversation branch.
 ;;   See the variable `gptel-org-branching-context'.
-;;   
+;;
 ;; - You can declare the gptel model, backend, temperature, system message and
 ;;   other parameters as Org properties with the command
 ;;   `gptel-org-set-properties'.  gptel queries under the corresponding heading
@@ -288,8 +288,8 @@ to the LLM, and after a text insertion."
   :type 'hook)
 
 (defcustom gptel-default-mode (if (fboundp 'markdown-mode)
-				  'markdown-mode
-				'text-mode)
+				                  'markdown-mode
+				                'text-mode)
   "The default major mode for dedicated chat buffers.
 
 If `markdown-mode' is available, it is used.  Otherwise gptel
@@ -346,8 +346,8 @@ Window' for details."
 
 (defcustom gptel-crowdsourced-prompts-file
   (let ((cache-dir (or (eval-when-compile
-			 (require 'xdg)
-			 (xdg-cache-home))
+			             (require 'xdg)
+			             (xdg-cache-home))
                        user-emacs-directory)))
     (expand-file-name "gptel-crowdsourced-prompts.csv" cache-dir))
   "File used to store crowdsourced system prompts.
@@ -436,12 +436,12 @@ To set the temperature for a chat session interactively call
 
 (defvar gptel--openai
   (gptel-make-openai
-   "ChatGPT"
-   :key 'gptel-api-key
-   :stream t
-   :models '("gpt-3.5-turbo" "gpt-3.5-turbo-16k" "gpt-4" "gpt-4o"
-             "gpt-4-turbo" "gpt-4-turbo-preview" "gpt-4-32k"
-             "gpt-4-1106-preview" "gpt-4-0125-preview")))
+      "ChatGPT"
+    :key 'gptel-api-key
+    :stream t
+    :models '("gpt-3.5-turbo" "gpt-3.5-turbo-16k" "gpt-4" "gpt-4o"
+              "gpt-4-turbo" "gpt-4-turbo-preview" "gpt-4-32k"
+              "gpt-4-1106-preview" "gpt-4-0125-preview")))
 
 (defcustom gptel-backend gptel--openai
   "LLM backend to use.
@@ -464,7 +464,7 @@ README for examples."
   :type `(choice
           (const :tag "ChatGPT" ,gptel--openai)
           (restricted-sexp :match-alternatives (gptel-backend-p 'nil)
-           :tag "Other backend")))
+                           :tag "Other backend")))
 
 (defvar gptel-expert-commands nil
   "Whether experimental gptel options should be enabled.
@@ -529,7 +529,7 @@ and \"apikey\" as USER."
                    :host (or host (gptel-backend-host gptel-backend))
                    :user (or user "apikey")
                    :require '(:secret)))
-                              :secret)))
+             :secret)))
       (if (functionp secret)
           (encode-coding-string (funcall secret) 'utf-8)
         secret)
@@ -637,7 +637,7 @@ in any way.")
         (when (setq prop (text-property-search-forward
                           'gptel 'response t))
           (cons (prop-match-beginning prop)
-                      (prop-match-end prop)))))))
+                (prop-match-end prop)))))))
 
 (defun gptel--in-response-p (&optional pt)
   "Check if position PT is inside a gptel response."
@@ -680,7 +680,7 @@ Valid JSON unless NO-JSON is t."
        (gptel-org--restore-state))
       (_ (when gptel--bounds
            (mapc (pcase-lambda (`(,beg . ,end))
-                         (put-text-property beg end 'gptel 'response))
+                   (put-text-property beg end 'gptel 'response))
                  gptel--bounds)
            (message "gptel chat restored."))
          (when gptel--backend-name
@@ -689,12 +689,12 @@ Valid JSON unless NO-JSON is t."
                               nil nil #'equal)))
                (setq-local gptel-backend backend)
              (message
-               (substitute-command-keys
-                (concat
-                 "Could not activate gptel backend \"%s\"!  "
-                 "Switch backends with \\[universal-argument] \\[gptel-send]"
-                 " before using gptel."))
-               gptel--backend-name)))))))
+              (substitute-command-keys
+               (concat
+                "Could not activate gptel backend \"%s\"!  "
+                "Switch backends with \\[universal-argument] \\[gptel-send]"
+                " before using gptel."))
+              gptel--backend-name)))))))
 
 (defun gptel--save-state ()
   "Write the gptel state to the buffer.
@@ -743,36 +743,36 @@ file."
         (add-hook 'before-save-hook #'gptel--save-state nil t)
         (gptel--restore-state)
         (if gptel-use-header-line
-          (setq gptel--old-header-line header-line-format
-                header-line-format
-                (list '(:eval (concat (propertize " " 'display '(space :align-to 0))
-                               (format "%s" (gptel-backend-name gptel-backend))))
-                      (propertize " Ready" 'face 'success)
-                      '(:eval
-                        (let ((system
-                               (format "[Prompt: %s]"
-                                (or (car-safe (rassoc gptel--system-message gptel-directives))
-                                 (truncate-string-to-width gptel--system-message 15 nil nil t)))))
-                         (concat
-                          (propertize
-                           " " 'display
-                           `(space :align-to (- right ,(+ 2 (length gptel-model) (length system)))))
-                          (propertize
-                           (buttonize system
-                            (lambda (&rest _) (gptel-system-prompt)))
-                           'mouse-face 'highlight
-                           'help-echo
-                           "System message for buffer")
-                          " "
-                          (propertize
-                           (buttonize (concat "[" gptel-model "]")
-                            (lambda (&rest _) (gptel-menu)))
-                           'mouse-face 'highlight
-                           'help-echo "GPT model in use"))))))
+            (setq gptel--old-header-line header-line-format
+                  header-line-format
+                  (list '(:eval (concat (propertize " " 'display '(space :align-to 0))
+                                        (format "%s" (gptel-backend-name gptel-backend))))
+                        (propertize " Ready" 'face 'success)
+                        '(:eval
+                          (let ((system
+                                 (format "[Prompt: %s]"
+                                         (or (car-safe (rassoc gptel--system-message gptel-directives))
+                                             (truncate-string-to-width gptel--system-message 15 nil nil t)))))
+                            (concat
+                             (propertize
+                              " " 'display
+                              `(space :align-to (- right ,(+ 2 (length gptel-model) (length system)))))
+                             (propertize
+                              (buttonize system
+                                         (lambda (&rest _) (gptel-system-prompt)))
+                              'mouse-face 'highlight
+                              'help-echo
+                              "System message for buffer")
+                             " "
+                             (propertize
+                              (buttonize (concat "[" gptel-model "]")
+                                         (lambda (&rest _) (gptel-menu)))
+                              'mouse-face 'highlight
+                              'help-echo "GPT model in use"))))))
           (setq mode-line-process
                 '(:eval (concat " "
-                         (buttonize gptel-model
-                            (lambda (&rest _) (gptel-menu))))))))
+                                (buttonize gptel-model
+                                           (lambda (&rest _) (gptel-menu))))))))
     (if gptel-use-header-line
         (setq header-line-format gptel--old-header-line
               gptel--old-header-line nil)
@@ -783,14 +783,14 @@ file."
   (when gptel-mode
     (if gptel-use-header-line
         (and (consp header-line-format)
-           (setf (nth 1 header-line-format)
-                 (propertize msg 'face face)))
+             (setf (nth 1 header-line-format)
+                   (propertize msg 'face face)))
       (if (member msg '(" Typing..." " Waiting..."))
           (setq mode-line-process (propertize msg 'face face))
         (setq mode-line-process
               '(:eval (concat " "
-                       (buttonize gptel-model
-                            (lambda (&rest _) (gptel-menu))))))
+                              (buttonize gptel-model
+                                         (lambda (&rest _) (gptel-menu))))))
         (message (propertize msg 'face face))))
     (force-mode-line-update)))
 
@@ -942,10 +942,10 @@ waiting for the response."
   (interactive "P")
   (if (and arg (require 'gptel-transient nil t))
       (call-interactively #'gptel-menu)
-  (message "Querying %s..." (gptel-backend-name gptel-backend))
-  (gptel--sanitize-model)
-  (gptel-request nil :stream gptel-stream)
-  (gptel--update-status " Waiting..." 'warning)))
+    (message "Querying %s..." (gptel-backend-name gptel-backend))
+    (gptel--sanitize-model)
+    (gptel-request nil :stream gptel-stream)
+    (gptel--update-status " Waiting..." 'warning)))
 
 (declare-function json-pretty-print-buffer "json")
 (defun gptel--inspect-query (request-data &optional arg)
@@ -998,7 +998,7 @@ See `gptel--url-get-response' for details."
       (if response
           (progn
             (setq response (gptel--transform-response
-                               response gptel-buffer))
+                            response gptel-buffer))
             (save-excursion
               (put-text-property
                0 (length response) 'gptel 'response response)
@@ -1115,10 +1115,10 @@ the response is inserted into the current buffer after point."
                   (when-let ((header (gptel-backend-header gptel-backend)))
                     (if (functionp header)
                         (funcall header) header))))
-        (url-request-data
-         (encode-coding-string
-          (gptel--json-encode (plist-get info :data))
-          'utf-8)))
+         (url-request-data
+          (encode-coding-string
+           (gptel--json-encode (plist-get info :data))
+           'utf-8)))
     ;; why do these checks not occur inside of `gptel--log'?
     (when gptel-log-level               ;logging
       (when (eq gptel-log-level 'debug)
@@ -1171,12 +1171,12 @@ See `gptel-curl--get-response' for its contents.")
                                      (gptel--json-read)
                                    (error 'json-read-error)))))
           (cond
-            ;; FIXME Handle the case where HTTP 100 is followed by HTTP (not 200) BUG #194
+           ;; FIXME Handle the case where HTTP 100 is followed by HTTP (not 200) BUG #194
            ((or (memq url-http-response-status '(200 100))
                 (string-match-p "\\(?:1\\|2\\)00 OK" http-msg))
             (list (string-trim (gptel--parse-response backend response
-                                             `(:buffer ,response-buffer)))
-                   http-msg))
+                                                      `(:buffer ,response-buffer)))
+                  http-msg))
            ((plist-get response :error)
             (let* ((error-data (plist-get response :error))
                    (error-msg (plist-get error-data :message))
@@ -1184,12 +1184,12 @@ See `gptel-curl--get-response' for its contents.")
                    (backend-name (gptel-backend-name backend)))
               (if (stringp error-data)
                   (progn
-		    (message "%s error: (%s) %s" backend-name http-msg error-data)
+		            (message "%s error: (%s) %s" backend-name http-msg error-data)
                     (setq error-msg (string-trim error-data)))
                 (when (stringp error-msg)
                   (message "%s error: (%s) %s" backend-name http-msg (string-trim error-msg)))
                 (when error-type
-		  (setq http-msg (concat "("  http-msg ") " (string-trim error-type)))))
+		          (setq http-msg (concat "("  http-msg ") " (string-trim error-type)))))
               (list nil (concat "(" http-msg ") " (or error-msg "")))))
            ((eq response 'json-read-error)
             (list nil (concat "(" http-msg ") Malformed JSON in response.") "json-read-error"))
@@ -1363,9 +1363,9 @@ context for the ediff session."
        history (cons (buffer-substring-no-properties beg end)
                      (nbutlast history))))
     (add-text-properties
-             0 (length alt-response)
-             `(gptel response gptel-history ,history)
-             alt-response)
+     0 (length alt-response)
+     `(gptel response gptel-history ,history)
+     alt-response)
     (setq offset (min (- (point) beg) (1- (length alt-response))))
     (delete-region beg end)
     (insert alt-response)

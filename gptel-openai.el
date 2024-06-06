@@ -53,18 +53,18 @@
     (defvar json-object-type)
     (declare-function json-read "json" ())
     `(let ((json-object-type 'plist))
-      (json-read))))
+       (json-read))))
 
 (defmacro gptel--json-encode (object)
   (if (fboundp 'json-serialize)
       `(json-serialize ,object
-        :null-object nil
-        :false-object :json-false)
+                       :null-object nil
+                       :false-object :json-false)
     (require 'json)
     (defvar json-false)
     (declare-function json-encode "json" (object))
     `(let ((json-false :json-false))
-      (json-encode ,object))))
+       (json-encode ,object))))
 
 ;;; Common backend struct for LLM support
 (defvar gptel--known-backends nil
@@ -109,10 +109,10 @@ with differing settings.")
   "JSON encode PROMPTS for sending to ChatGPT."
   (let ((prompts-plist
          `(:model ,gptel-model
-           :messages [,@prompts]
-           :stream ,(or (and gptel-stream gptel-use-curl
-                         (gptel-backend-stream gptel-backend))
-                     :json-false))))
+                  :messages [,@prompts]
+                  :stream ,(or (and gptel-stream gptel-use-curl
+                                    (gptel-backend-stream gptel-backend))
+                               :json-false))))
     (when gptel-temperature
       (plist-put prompts-plist :temperature gptel-temperature))
     (when gptel-max-tokens
@@ -154,7 +154,7 @@ with differing settings.")
     (name &key curl-args models stream key
           (header
            (lambda () (when-let (key (gptel--get-api-key))
-                   `(("Authorization" . ,(concat "Bearer " key))))))
+                        `(("Authorization" . ,(concat "Bearer " key))))))
           (host "api.openai.com")
           (protocol "https")
           (endpoint "/v1/chat/completions"))
@@ -200,7 +200,7 @@ function that returns the key."
     (prog1 backend
       (setf (alist-get name gptel--known-backends
                        nil nil #'equal)
-                  backend))))
+            backend))))
 
 ;;; Azure
 ;;;###autoload

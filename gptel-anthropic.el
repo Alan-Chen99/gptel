@@ -63,12 +63,12 @@
   "JSON encode PROMPTS for sending to ChatGPT."
   (let ((prompts-plist
          `(:model ,gptel-model
-           :system ,gptel--system-message
-           :stream ,(or (and gptel-stream gptel-use-curl
-                         (gptel-backend-stream gptel-backend))
-                     :json-false)
-           :max_tokens ,(or gptel-max-tokens 1024)
-           :messages [,@prompts])))
+                  :system ,gptel--system-message
+                  :stream ,(or (and gptel-stream gptel-use-curl
+                                    (gptel-backend-stream gptel-backend))
+                               :json-false)
+                  :max_tokens ,(or gptel-max-tokens 1024)
+                  :messages [,@prompts])))
     (when gptel-temperature
       (plist-put prompts-plist :temperature gptel-temperature))
     prompts-plist))
@@ -155,7 +155,7 @@ returns the key."
     (prog1 backend
       (setf (alist-get name gptel--known-backends
                        nil nil #'equal)
-                  backend))))
+            backend))))
 
 (provide 'gptel-anthropic)
 ;;; gptel-backends.el ends here

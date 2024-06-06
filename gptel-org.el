@@ -57,7 +57,7 @@ of Org."
       (declare (indent 2))
       (setq fun (if (functionp fun) fun `(lambda (node) ,fun)))
       (let ((up (if with-self datum (org-element-parent datum)))
-	    acc rtn)
+	        acc rtn)
         (catch :--first-match
           (while up
             (when (or (not types) (org-element-type-p up types))
@@ -200,8 +200,8 @@ value of `gptel-org-branching-context', which see."
                   (let ((major-mode 'org-mode))
                     (gptel--parse-buffer gptel-backend max-entries)))))
           (display-warning
-             '(gptel org)
-             "Using `gptel-org-branching-context' requires Org version 9.6.7 or higher, it will be ignored.")
+           '(gptel org)
+           "Using `gptel-org-branching-context' requires Org version 9.6.7 or higher, it will be ignored.")
           (gptel--parse-buffer gptel-backend max-entries))
       ;; Create prompt the usual way
       (gptel--parse-buffer gptel-backend max-entries))))
@@ -215,7 +215,7 @@ system message, model and provider (backend), among other
 parameters."
   (if (derived-mode-p 'org-mode)
       (pcase-let ((`(,gptel--system-message ,gptel-backend ,gptel-model
-                     ,gptel-temperature ,gptel-max-tokens)
+                                            ,gptel-temperature ,gptel-max-tokens)
                    (seq-mapn (lambda (a b) (or a b))
                              (gptel-org--entry-properties)
                              (list gptel--system-message gptel-backend gptel-model
@@ -237,10 +237,10 @@ parameters."
   "Find gptel configuration properties stored in the current heading."
   (pcase-let
       ((`(,system ,backend ,model ,temperature ,tokens)
-         (mapcar
-          (lambda (prop) (org-entry-get (or pt (point)) prop 'selective))
-          '("GPTEL_SYSTEM" "GPTEL_BACKEND" "GPTEL_MODEL"
-            "GPTEL_TEMPERATURE" "GPTEL_MAX_TOKENS"))))
+        (mapcar
+         (lambda (prop) (org-entry-get (or pt (point)) prop 'selective))
+         '("GPTEL_SYSTEM" "GPTEL_BACKEND" "GPTEL_MODEL"
+           "GPTEL_TEMPERATURE" "GPTEL_MAX_TOKENS"))))
     (when system
       (setq system (string-replace "\\n" "\n" system)))
     (when backend
@@ -294,7 +294,7 @@ non-nil (default), display a message afterwards."
     (org-entry-put pt "GPTEL_TEMPERATURE"
                    (number-to-string gptel-temperature)))
   (org-entry-put pt "GPTEL_SYSTEM"
-                 (string-replace "\n" "\\n" gptel--system-message))   
+                 (string-replace "\n" "\\n" gptel--system-message))
   (when gptel-max-tokens
     (org-entry-put
      pt "GPTEL_MAX_TOKENS" (number-to-string gptel-max-tokens)))
@@ -342,8 +342,8 @@ elements."
              (while (search-forward ticks nil t)
                (unless (or (eq (char-before (match-beginning 0)) ?`)
                            (eq (char-after) ?`))
-                   (gptel--replace-source-marker (length ticks) 'end)
-                   (throw 'block-end nil))))))
+                 (gptel--replace-source-marker (length ticks) 'end)
+                 (throw 'block-end nil))))))
         ;; Handle headings
         ((and (guard (eq (char-before) ?#)) heading)
          (when (looking-at "[[:space:]]")
@@ -490,7 +490,7 @@ text stream."
           (if noop-p
               (buffer-substring (point) start-pt)
             (prog1 (buffer-substring (point) (point-max))
-                   (set-marker start-pt (point-max)))))))))
+              (set-marker start-pt (point-max)))))))))
 
 (provide 'gptel-org)
 ;;; gptel-org.el ends here

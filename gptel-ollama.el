@@ -75,10 +75,10 @@ Intended for internal use only.")
   "JSON encode PROMPTS for sending to ChatGPT."
   (let ((prompts-plist
          `(:model ,gptel-model
-           :messages [,@prompts]
-           :stream ,(or (and gptel-stream gptel-use-curl
-                         (gptel-backend-stream gptel-backend))
-                     :json-false)))
+                  :messages [,@prompts]
+                  :stream ,(or (and gptel-stream gptel-use-curl
+                                    (gptel-backend-stream gptel-backend))
+                               :json-false)))
         options-plist)
     (when gptel-temperature
       (setq options-plist
@@ -179,9 +179,7 @@ Example:
     (prog1 backend
       (setf (alist-get name gptel--known-backends
                        nil nil #'equal)
-                  backend))))
+            backend))))
 
 (provide 'gptel-ollama)
 ;;; gptel-ollama.el ends here
-
-
