@@ -274,7 +274,6 @@ See `gptel--url-get-response' for details."
                 (insert (gptel-response-prefix-string)))
               (move-marker start-marker (point)))
             (setq tracking-marker (set-marker (make-marker) (point)))
-            (set-marker-insertion-type tracking-marker t)
             (plist-put info :tracking-marker tracking-marker))
 
           (when transformer
@@ -284,7 +283,7 @@ See `gptel--url-get-response' for details."
            0 (length response) 'gptel 'response response)
           (goto-char tracking-marker)
           ;; (run-hooks 'gptel-pre-stream-hook)
-          (insert response)
+          (insert-before-markers response)
           (run-hooks 'gptel-post-stream-hook))))))
 
 (defun gptel-curl--stream-filter (process output)

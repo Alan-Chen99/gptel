@@ -377,6 +377,7 @@ interactively call `gptel-send' with a prefix argument."
 (defvar gptel--system-message (alist-get 'default gptel-directives)
   "The system message used by gptel.")
 (put 'gptel--system-message 'safe-local-variable #'always)
+(setf (get 'gptel--system-message 'permanent-local) t)
 
 (defcustom gptel-max-tokens nil
   "Max tokens per response.
@@ -725,7 +726,7 @@ file."
 ;; Minor mode and UI
 
 ;; NOTE: It's not clear that this is the best strategy:
-(add-to-list 'text-property-default-nonsticky '(gptel . t))
+;; (add-to-list 'text-property-default-nonsticky '(gptel . t))
 
 ;;;###autoload
 (define-minor-mode gptel-mode
@@ -737,10 +738,10 @@ file."
     map)
   (if gptel-mode
       (progn
-        (unless (memq major-mode '(org-mode markdown-mode text-mode))
-          (gptel-mode -1)
-          (user-error (format "`gptel-mode' is not supported in `%s'." major-mode)))
-        (add-hook 'before-save-hook #'gptel--save-state nil t)
+        ;; (unless (memq major-mode '(org-mode markdown-mode text-mode))
+        ;;   (gptel-mode -1)
+        ;;   (user-error (format "`gptel-mode' is not supported in `%s'." major-mode)))
+        ;; (add-hook 'before-save-hook #'gptel--save-state nil t)
         (gptel--restore-state)
         (if gptel-use-header-line
             (setq gptel--old-header-line header-line-format
@@ -1026,7 +1027,7 @@ See `gptel--url-get-response' for details."
       (with-current-buffer gptel-buffer
         (run-hook-with-args 'gptel-post-response-functions response-beg response-end)))))
 
-(defun gptel--create-prompt (&optional prompt-end)
+(defun gptel--create-prompt (&optional prompt-end inhibit-trim)
   "Return a full conversation prompt from the contents of this buffer.
 
 If `gptel--num-messages-to-send' is set, limit to that many
@@ -1036,7 +1037,10 @@ If the region is active limit the prompt to the region contents
 instead.
 
 If PROMPT-END (a marker) is provided, end the prompt contents
-there."
+there.
+
+If INHIBIT-TRIM is non nil, do not remove additional characters.
+This is used in saving to a file"
   (save-excursion
     (save-restriction
       (let ((max-entries (and gptel--num-messages-to-send
@@ -1046,14 +1050,14 @@ there."
           ;; Narrow to region
           (narrow-to-region (region-beginning) (region-end))
           (goto-char (point-max))
-          (gptel--parse-buffer gptel-backend max-entries))
+          (gptel--parse-buffer gptel-backend max-entries inhibit-trim))
          ((derived-mode-p 'org-mode)
           (require 'gptel-org)
           (gptel-org--create-prompt (or prompt-end (point-max))))
          (t (goto-char (or prompt-end (point-max)))
-            (gptel--parse-buffer gptel-backend max-entries)))))))
+            (gptel--parse-buffer gptel-backend max-entries inhibit-trim)))))))
 
-(cl-defgeneric gptel--parse-buffer (backend max-entries)
+(cl-defgeneric gptel--parse-buffer (backend max-entries &optional inhibit-trim)
   "Parse current buffer backwards from point and return a list of prompts.
 
 BACKEND is the LLM backend in use.
@@ -1229,11 +1233,13 @@ INTERACTIVEP is t when gptel is called interactively."
    (let* ((backend (default-value 'gptel-backend))
           (backend-name
            (format "*%s*" (gptel-backend-name backend))))
-     (list (read-buffer "Create or choose gptel buffer: "
-                        backend-name nil                         ; DEFAULT and REQUIRE-MATCH
-                        (lambda (b)                              ; PREDICATE
-                          (buffer-local-value 'gptel-mode
-                                              (get-buffer (or (car-safe b) b)))))
+     (list (if current-prefix-arg
+               (read-buffer "Create or choose gptel buffer: "
+                            backend-name nil                         ; DEFAULT and REQUIRE-MATCH
+                            (lambda (b)                              ; PREDICATE
+                              (buffer-local-value 'gptel-mode
+                                                  (get-buffer (or (car-safe b) b)))))
+             backend-name)
            (condition-case nil
                (gptel--get-api-key
                 (gptel-backend-key backend))
