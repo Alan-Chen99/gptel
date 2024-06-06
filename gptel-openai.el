@@ -119,7 +119,7 @@ with differing settings.")
       (plist-put prompts-plist :max_tokens gptel-max-tokens))
     prompts-plist))
 
-(cl-defmethod gptel--parse-buffer ((_backend gptel-openai) &optional max-entries)
+(cl-defmethod gptel--parse-buffer ((_backend gptel-openai) &optional max-entries inhibit-trim)
   (let ((prompts) (prop))
     (if (or gptel-mode gptel-track-response)
         (while (and
@@ -131,20 +131,30 @@ with differing settings.")
                               t))))
           (push (list :role (if (prop-match-value prop) "assistant" "user")
                       :content
-                      (string-trim
-                       (buffer-substring-no-properties (prop-match-beginning prop)
-                                                       (prop-match-end prop))
-                       (format "[\t\r\n ]*\\(?:%s\\)?[\t\r\n ]*"
-                               (regexp-quote (gptel-prompt-prefix-string)))
-                       (format "[\t\r\n ]*\\(?:%s\\)?[\t\r\n ]*"
-                               (regexp-quote (gptel-response-prefix-string)))))
+                      (let ((s (buffer-substring-no-properties (prop-match-beginning prop)
+                                                               (prop-match-end prop))))
+                        (if inhibit-trim s
+                          (string-trim
+                           s
+                           (format "[\t\r\n ]*\\(?:%s\\)?[\t\r\n ]*"
+                                   (regexp-quote (gptel-prompt-prefix-string)))
+                           (format "[\t\r\n ]*\\(?:%s\\)?[\t\r\n ]*"
+                                   (regexp-quote (gptel-response-prefix-string)))))))
                 prompts)
           (and max-entries (cl-decf max-entries)))
       (push (list :role "user"
                   :content
-                  (string-trim
-                   (buffer-substring-no-properties (point-min) (point-max))))
-            prompts))
+                  (let ((s (buffer-substring-no-properties (prop-match-beginning prop)
+                                                           (prop-match-end prop))))
+                    (if inhibit-trim s
+                      (string-trim
+                       s
+                       (format "[\t\r\n ]*\\(?:%s\\)?[\t\r\n ]*"
+                               (regexp-quote (gptel-prompt-prefix-string)))
+                       (format "[\t\r\n ]*\\(?:%s\\)?[\t\r\n ]*"
+                               (regexp-quote (gptel-response-prefix-string)))))))
+            prompts)
+      (and max-entries (cl-decf max-entries)))
     (cons (list :role "system"
                 :content gptel--system-message)
           prompts)))
