@@ -2356,6 +2356,7 @@ PROMPTS is the plist of previous user queries and LLM responses.")
   "Check if MODEL is available in BACKEND, adjust accordingly.
 
 If SHOOSH is true, don't issue a warning."
+  (setq shoosh nil)
   (let ((available (gptel-backend-models backend)))
     (when (stringp model)
       (unless shoosh

@@ -420,9 +420,11 @@ Note: This will move the cursor."
               (delete-overlay hide-ov)
             (unless hide-ov (setq hide-ov (make-overlay (point) end)))
             (overlay-put hide-ov 'evaporate t)
-            (overlay-put hide-ov 'invisible t)
-            (overlay-put hide-ov 'before-string
-                         (propertize "..." 'face 'shadow))))))))
+            (overlay-put hide-ov 'face 'gptel-context-highlight-face)
+            ;; (overlay-put hide-ov 'invisible t)
+            ;; (overlay-put hide-ov 'before-string
+            ;;              (propertize "..." 'face 'shadow))
+            ))))))
 
 (defsubst gptel--annotate-link (ov link-status)
   "Annotate link overlay OV according to LINK-STATUS.
